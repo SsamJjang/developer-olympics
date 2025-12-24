@@ -352,6 +352,12 @@
             document.getElementById('tutorial-overlay').classList.add('hidden'); 
             document.getElementById('countdown-overlay').classList.add('hidden');
             document.body.style.backgroundColor = 'var(--bg-color)';
+            
+            // --- ADD THIS LINE HERE ---
+            document.querySelectorAll('.menu-btn').forEach(b => b.style.display = ''); 
+            // --------------------------
+
+            wrapper.focus();
         }
 
         function prepGame(gameId) {
