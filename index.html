@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>10x Developer Olympics v6.1</title>
+    <title>10x Developer Olympics v7.0</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -60,7 +60,29 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            overflow: hidden; /* Keeps overlays inside */
         }
+
+        /* --- COUNTDOWN OVERLAY --- */
+        #countdown-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; /* Opaque black to hide game */
+            z-index: 60;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #countdown-text {
+            font-size: 8rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 20px #fff;
+            animation: pop 0.2s ease-out;
+        }
+
+        @keyframes pop { 0% { transform: scale(0.5); opacity:0; } 80% { transform: scale(1.2); } 100% { transform: scale(1); opacity:1; } }
 
         /* --- TUTORIAL OVERLAY --- */
         #tutorial-overlay {
@@ -93,28 +115,9 @@
         #tutorial-desc::-webkit-scrollbar { width: 8px; }
         #tutorial-desc::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         
-        .key-hint {
-            background: #333;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            border: 1px solid #666;
-            color: #fff;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
+        .key-hint { background: #333; padding: 2px 6px; border-radius: 4px; font-family: monospace; border: 1px solid #666; color: #fff; font-weight: bold; font-size: 0.9em; }
 
-        .rank-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            text-align: left;
-            gap: 5px;
-            font-size: 0.85rem;
-            background: #111;
-            padding: 15px;
-            border: 1px solid #333;
-            margin-top: 15px;
-        }
+        .rank-grid { display: grid; grid-template-columns: 1fr 1fr; text-align: left; gap: 5px; font-size: 0.85rem; background: #111; padding: 15px; border: 1px solid #333; margin-top: 15px; }
 
         /* --- MENU --- */
         .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
@@ -131,35 +134,24 @@
             text-transform: uppercase;
         }
 
-        .menu-btn:hover {
-            background: var(--text-color);
-            color: var(--bg-color);
-            box-shadow: 0 0 15px var(--text-color);
-            transform: scale(1.02);
-        }
+        .menu-btn:hover { background: var(--text-color); color: var(--bg-color); box-shadow: 0 0 15px var(--text-color); transform: scale(1.02); }
 
         /* --- GAME UI --- */
         .hidden { display: none !important; }
         .big-text { font-size: 2.5rem; margin: 20px 0; font-weight: bold; min-height: 60px; }
         .timer { font-size: 3rem; color: #fff; margin-bottom: 20px; text-shadow: 0 0 10px #fff; }
         
-        /* KEYS */
-        .key-box {
-            display: inline-block; border: 2px solid #555; padding: 10px 15px; margin: 5px; border-radius: 5px; color: #555; font-size: 1.5rem; font-weight: bold;
-        }
+        .key-box { display: inline-block; border: 2px solid #555; padding: 10px 15px; margin: 5px; border-radius: 5px; color: #555; font-size: 1.5rem; font-weight: bold; }
         .key-box.active { border-color: var(--text-color); color: var(--text-color); box-shadow: 0 0 10px var(--text-color); transform: scale(1.1); }
         .key-box.done { border-color: var(--accent-color); color: var(--accent-color); text-decoration: line-through; opacity: 0.5; }
 
-        /* SUDO */
         .sudo-input { font-size: 2rem; color: var(--fail-color); margin-top: 20px; min-height: 40px; }
         
-        /* BINARY */
         .binary-stream { font-size: 2.5rem; letter-spacing: 10px; font-weight: bold; word-break: break-all; max-width: 600px; }
         .binary-char { color: #555; transition: color 0.1s; }
         .binary-char.current { color: #fff; text-shadow: 0 0 10px #fff; border-bottom: 2px solid var(--text-color); }
         .binary-char.done { color: var(--text-color); opacity: 0.3; }
 
-        /* VIM */
         .vim-mode { background-color: #1d1d1d; color: #ccc; border: none; }
         .vim-goal { font-size: 2rem; color: var(--warn-color); font-weight: bold; text-align: center; margin-bottom: 10px;}
         .vim-user-input { position: absolute; bottom: 20px; left: 20px; font-weight: bold; font-size: 1.2rem; color: #fff; }
@@ -174,16 +166,7 @@
         #focus-shield h1 { animation: pulse 1s infinite; }
 
         .back-hint { position: absolute; bottom: 10px; right: 15px; font-size: 0.8rem; color: #555; }
-        
-        /* RANK DISPLAY */
-        .rank-display { 
-            font-size: 2rem; 
-            color: var(--accent-color); 
-            margin-top: 15px; 
-            font-weight: bold; 
-            text-shadow: 0 0 10px var(--accent-color);
-            min-height: 40px;
-        }
+        .rank-display { font-size: 2rem; color: var(--accent-color); margin-top: 15px; font-weight: bold; text-shadow: 0 0 10px var(--accent-color); min-height: 40px; }
 
         @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
         .shake { animation: shake 0.3s; }
@@ -215,15 +198,19 @@
         <div id="tutorial-overlay" class="hidden">
             <div id="tutorial-title">TUTORIAL</div>
             <div id="tutorial-desc">Instructions go here.</div>
-            <button class="menu-btn" onclick="launchCurrentGame()">INITIALIZE GAME</button>
+            <button class="menu-btn" onclick="initiateCountdown()">INITIALIZE GAME</button>
             <div style="margin-top: 15px; font-size: 0.8rem; color: #666; cursor: pointer;" onclick="showMenu()">[ ABORT ]</div>
+        </div>
+
+        <div id="countdown-overlay" class="hidden">
+            <div id="countdown-text">3</div>
         </div>
 
         <div id="game-reflex" class="game-panel hidden">
             <div class="big-text" id="reflex-status">WAIT...</div>
             <div class="timer" id="reflex-timer">0.00</div>
             <div class="rank-display" id="reflex-rank"></div>
-            <button class="menu-btn" id="reflex-btn" onclick="startReflex()">Restart</button>
+            <button class="menu-btn" id="reflex-btn" onclick="initiateCountdown()">Restart</button>
             <div class="back-hint">ESC to Menu</div>
         </div>
 
@@ -231,7 +218,7 @@
             <div id="combo-display" style="margin: 30px 0;"></div>
             <div class="timer" id="combo-timer">0.00s</div>
             <div class="rank-display" id="combo-rank"></div>
-            <button class="menu-btn" id="combo-btn" onclick="startCombo()">Restart</button>
+            <button class="menu-btn" id="combo-btn" onclick="initiateCountdown()">Restart</button>
             <div class="back-hint">ESC to Menu</div>
         </div>
 
@@ -241,7 +228,7 @@
             <div class="rank-display" id="vim-rank"></div>
             <div style="font-size: 0.9rem; color:#555">Tasks Left: <span id="vim-count">0</span></div>
             <div class="vim-user-input" id="vim-input-display"></div>
-            <button class="menu-btn" id="vim-btn" onclick="startVim()" style="border-color:#555; color:#555; margin-top:20px;">Restart</button>
+            <button class="menu-btn" id="vim-btn" onclick="initiateCountdown()" style="border-color:#555; color:#555; margin-top:20px;">Restart</button>
             <div class="back-hint">ESC to Menu</div>
         </div>
 
@@ -250,7 +237,7 @@
             <div id="sudo-display" class="sudo-input">_</div>
             <div class="timer" id="sudo-timer">0.00s</div>
             <div class="rank-display" id="sudo-rank"></div>
-            <button class="menu-btn" id="sudo-btn" onclick="startSudo()">Restart</button>
+            <button class="menu-btn" id="sudo-btn" onclick="initiateCountdown()">Restart</button>
             <div class="back-hint">ESC to Menu</div>
         </div>
 
@@ -258,7 +245,7 @@
             <div id="binary-container" class="binary-stream"></div>
             <div class="timer" id="binary-timer">0.00s</div>
             <div class="rank-display" id="binary-rank"></div>
-            <button class="menu-btn" id="binary-btn" onclick="startBinary()">Restart</button>
+            <button class="menu-btn" id="binary-btn" onclick="initiateCountdown()">Restart</button>
             <div class="back-hint">ESC to Menu</div>
         </div>
 
@@ -393,17 +380,78 @@
             wrapper.focus();
         }
 
-        function launchCurrentGame() {
+        // --- COUNTDOWN SYSTEM ---
+        function initiateCountdown() {
             document.getElementById('tutorial-overlay').classList.add('hidden');
             document.getElementById(`game-${currentGame}`).classList.remove('hidden');
             
+            // Hide Buttons during countdown/gameplay
+            document.querySelectorAll('.menu-btn').forEach(b => b.style.display = 'none');
+            
+            const overlay = document.getElementById('countdown-overlay');
+            const text = document.getElementById('countdown-text');
+            overlay.classList.remove('hidden');
+            
+            let count = 3;
+            text.innerText = count;
+            text.style.color = "#fff";
+
+            // Reset Game UI State *Behind* the curtain
+            resetGameUI(currentGame);
+
+            const intv = setInterval(() => {
+                count--;
+                if(count > 0) {
+                    text.innerText = count;
+                    // Retrigger animation
+                    text.style.animation = 'none';
+                    text.offsetHeight; /* trigger reflow */
+                    text.style.animation = 'pop 0.2s ease-out';
+                } else if (count === 0) {
+                    text.innerText = "GO!";
+                    text.style.color = "var(--text-color)";
+                } else {
+                    clearInterval(intv);
+                    overlay.classList.add('hidden');
+                    launchActualGame();
+                }
+            }, 800);
+        }
+
+        function resetGameUI(game) {
+            if(game === 'reflex') {
+                document.getElementById('reflex-status').innerText = "WAIT...";
+                document.getElementById('reflex-status').style.color = "var(--text-color)";
+                document.getElementById('reflex-rank').innerText = "";
+            }
+            if(game === 'combo') {
+                document.getElementById('combo-display').innerHTML = '';
+                document.getElementById('combo-rank').innerText = "";
+            }
+            if(game === 'vim') {
+                document.getElementById('vim-input-display').innerText = "";
+                document.getElementById('vim-goal-text').innerText = "-- VIM LOADED --";
+                document.getElementById('vim-rank').innerText = "";
+            }
+            if(game === 'sudo') {
+                document.getElementById('sudo-display').innerText = "_";
+                document.getElementById('sudo-target').innerText = "sudo ...";
+                document.getElementById('sudo-rank').innerText = "";
+            }
+            if(game === 'binary') {
+                document.getElementById('binary-container').innerHTML = "";
+                document.getElementById('binary-rank').innerText = "";
+            }
+        }
+
+        function launchActualGame() {
             if(currentGame === 'reflex') startReflex();
             else if(currentGame === 'combo') startCombo();
             else if(currentGame === 'vim') startVim();
             else if(currentGame === 'sudo') startSudo();
             else if(currentGame === 'binary') startBinary();
             
-            // Forces focus AFTER the UI update logic runs
+            // Force Focus AFTER countdown
             setTimeout(() => wrapper.focus(), 10);
         }
 
@@ -419,16 +467,12 @@
 
         function startReflex() {
             document.getElementById('reflex-btn').style.display = 'none';
-            document.getElementById('reflex-rank').innerText = "";
             reflexPhase = 'spam';
             document.getElementById('reflex-status').innerText = "SPAM CTRL+C !!!";
             document.body.style.backgroundColor = "#b30000"; 
             
             const delay = Math.floor(Math.random() * 3000) + 2000;
             
-            // FIX: Force focus when restarting via button
-            setTimeout(() => wrapper.focus(), 10);
-
             reflexTimeout = setTimeout(() => {
                 reflexPhase = 'paste';
                 document.body.style.backgroundColor = "#00cc00"; 
@@ -445,14 +489,9 @@
 
         function startCombo() {
             document.getElementById('combo-btn').style.display = 'none';
-            document.getElementById('combo-rank').innerText = "";
             gameActive = true;
             comboSequence = [];
             comboIndex = 0;
-            
-            // FIX: Force focus when restarting via button
-            setTimeout(() => wrapper.focus(), 10);
-
             const display = document.getElementById('combo-display');
             display.innerHTML = '';
             for(let i=0; i<8; i++) {
@@ -483,15 +522,10 @@
 
         function startVim() {
             document.getElementById('vim-btn').style.display = 'none';
-            document.getElementById('vim-rank').innerText = "";
             gameActive = true;
             vimInput = "";
             vimTaskIndex = 0;
             vimTasks = [];
-            
-            // FIX: Force focus when restarting via button
-            setTimeout(() => wrapper.focus(), 10);
-
             for(let i=0; i<5; i++) {
                 vimTasks.push(vimDictionary[Math.floor(Math.random() * vimDictionary.length)]);
             }
@@ -575,13 +609,8 @@
 
         function startSudo() {
             document.getElementById('sudo-btn').style.display = 'none';
-            document.getElementById('sudo-rank').innerText = "";
             gameActive = true;
             sudoInput = "";
-            
-            // FIX: Force focus when restarting via button
-            setTimeout(() => wrapper.focus(), 10);
-
             sudoTarget = sudoPhrases[Math.floor(Math.random() * sudoPhrases.length)];
             document.getElementById('sudo-target').innerText = sudoTarget;
             document.getElementById('sudo-display').innerText = "_";
@@ -596,14 +625,9 @@
 
         function startBinary() {
             document.getElementById('binary-btn').style.display = 'none';
-            document.getElementById('binary-rank').innerText = "";
             gameActive = true;
             binarySeq = "";
             binaryIndex = 0;
-            
-            // FIX: Force focus when restarting via button
-            setTimeout(() => wrapper.focus(), 10);
-
             const container = document.getElementById('binary-container');
             container.innerHTML = "";
             for(let i=0; i<20; i++) {
