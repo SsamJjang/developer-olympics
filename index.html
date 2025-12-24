@@ -39,6 +39,31 @@
             z-index: 99;
         }
 
+        .lb-nav {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid #555;
+            color: #888;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: var(--font-main);
+            font-size: 0.8rem;
+            flex-grow: 1;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--text-color);
+            color: #fff;
+        }
+
         #game-wrapper {
             width: 800px;
             text-align: center;
@@ -134,6 +159,40 @@
         }
 
         .menu-btn:hover { background: var(--text-color); color: var(--bg-color); box-shadow: 0 0 15px var(--text-color); transform: scale(1.02); }
+        
+        .share-btn {
+            margin-top: 20px;
+            border-color: var(--accent-color); /* Optional: Makes it Pink to stand out */
+            color: var(--accent-color);        /* Optional: Makes text Pink */
+        }
+
+        #leaderboard-modal, #submit-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .modal-content {
+            background: #111; border: 2px solid var(--text-color);
+            padding: 30px; text-align: center; border-radius: 10px;
+            box-shadow: 0 0 20px var(--text-color); width: 400px;
+        }
+
+        #lb-list {
+            margin: 20px 0; text-align: left; font-family: monospace;
+            max-height: 300px; overflow-y: auto;
+        }
+
+        .lb-row {
+            display: flex; justify-content: space-between;
+            padding: 5px 0; border-bottom: 1px solid #333;
+        }
+
+        #player-name {
+            background: #222; border: 1px solid #555; color: #fff;
+            padding: 10px; font-size: 1.2rem; margin-bottom: 20px;
+            text-align: center; width: 80%; font-family: var(--font-main);
+        }
 
         /* --- GAME UI --- */
         .hidden { display: none !important; }
@@ -163,6 +222,7 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
 
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -177,6 +237,7 @@
                 <button class="menu-btn" onclick="prepGame('vim')">3. Vim Command Drill</button>
                 <button class="menu-btn" onclick="prepGame('sudo')">4. Sudo Suicide</button>
                 <button class="menu-btn" onclick="prepGame('binary')">5. Binary Binge</button>
+                <button class="menu-btn" style="grid-column: span 2; border-color: #ffcc00; color: #ffcc00;" onclick="viewLeaderboard('reflex')">🏆 GLOBAL LEADERBOARDS</button>
             </div>
         </div>
 
@@ -196,6 +257,7 @@
             <div class="timer" id="reflex-timer">0.00</div>
             <div class="rank-display" id="reflex-rank"></div>
             <button class="menu-btn" id="reflex-btn" onclick="initiateCountdown()">Restart</button>
+            <button class="menu-btn share-btn hidden" onclick="openSubmitModal()">Share Record</button>
             <div class="back-hint">ESC to Menu</div>
         </div>
 
@@ -204,6 +266,7 @@
             <div class="timer" id="combo-timer">0.00s</div>
             <div class="rank-display" id="combo-rank"></div>
             <button class="menu-btn" id="combo-btn" onclick="initiateCountdown()">Restart</button>
+            <button class="menu-btn share-btn hidden" onclick="openSubmitModal()">Share Record</button>
             <div class="back-hint">ESC to Menu</div>
         </div>
 
@@ -214,6 +277,7 @@
             <div style="font-size: 0.9rem; color:#555">Tasks Left: <span id="vim-count">0</span></div>
             <div class="vim-user-input" id="vim-input-display"></div>
             <button class="menu-btn" id="vim-btn" onclick="initiateCountdown()" style="border-color:#555; color:#555; margin-top:20px;">Restart</button>
+            <button class="menu-btn share-btn hidden" onclick="openSubmitModal()">Share Record</button>
             <div class="back-hint">ESC to Menu</div>
         </div>
 
@@ -223,6 +287,7 @@
             <div class="timer" id="sudo-timer">0.00s</div>
             <div class="rank-display" id="sudo-rank"></div>
             <button class="menu-btn" id="sudo-btn" onclick="initiateCountdown()">Restart</button>
+            <button class="menu-btn share-btn hidden" onclick="openSubmitModal()">Share Record</button>
             <div class="back-hint">ESC to Menu</div>
         </div>
 
@@ -231,19 +296,54 @@
             <div class="timer" id="binary-timer">0.00s</div>
             <div class="rank-display" id="binary-rank"></div>
             <button class="menu-btn" id="binary-btn" onclick="initiateCountdown()">Restart</button>
+            <button class="menu-btn share-btn hidden" onclick="openSubmitModal()">Share Record</button>
             <div class="back-hint">ESC to Menu</div>
+        </div>
+
+        <div id="leaderboard-modal" class="hidden">
+            <div class="modal-content" style="width: 500px;"> <h2>LEADERBOARDS</h2>
+                
+                <div class="lb-nav">
+                    <button class="nav-btn" onclick="viewLeaderboard('reflex')">Reflex</button>
+                    <button class="nav-btn" onclick="viewLeaderboard('combo')">Combo</button>
+                    <button class="nav-btn" onclick="viewLeaderboard('vim')">Vim</button>
+                    <button class="nav-btn" onclick="viewLeaderboard('sudo')">Sudo</button>
+                    <button class="nav-btn" onclick="viewLeaderboard('binary')">Binary</button>
+                </div>
+
+                <h3 id="lb-title" style="color:var(--text-color); margin-top:10px;">LOADING...</h3>
+                <div id="lb-list">Loading...</div>
+                <button class="menu-btn" onclick="closeModal('leaderboard-modal')">CLOSE</button>
+            </div>
+        </div>
+
+        <div id="submit-modal" class="hidden">
+            <div class="modal-content">
+                <h2>NEW RECORD</h2>
+                <p>Enter your name to immortalize your score.</p>
+                <input type="text" id="player-name" placeholder="Anonymous" maxlength="15">
+                <button class="menu-btn" onclick="submitToSupabase()">SUBMIT</button>
+                <button class="menu-btn" style="border-color: #555; color: #888;" onclick="closeModal('submit-modal')">CANCEL</button>
+            </div>
         </div>
 
     </div>
 
     <script>
+
+        const supabaseUrl = 'https://plowkappobhtijindnds.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsb3drYXBwb2JodGlqaW5kbmRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1ODAzNzEsImV4cCI6MjA4MjE1NjM3MX0.74LB8wzQhivYiSrWILiYX62AIbhe7NzvYk2KwnZIPEY';
+        const _db = supabase.createClient(supabaseUrl, supabaseKey);
         // --- SYSTEM CORE ---
         let currentGame = null;
         let gameActive = false;
         let startTime = 0;
         let gameTimerInt = null;
         let countdownInt = null; // Separate interval for countdown
+        let pendingScore = 0;
+        let pendingGameId = "";
 
+        
         // --- RANKING LOGIC ---
         function generateRankTable(ranks) {
             let html = "<div class='rank-grid'>";
@@ -375,7 +475,7 @@
             document.getElementById(`game-${currentGame}`).classList.remove('hidden');
             
             // Hide Restart buttons immediately
-            document.querySelectorAll('.menu-btn').forEach(b => b.style.display = 'none');
+            document.querySelectorAll('.game-panel .menu-btn').forEach(b => b.style.display = 'none');
             
             const overlay = document.getElementById('countdown-overlay');
             const text = document.getElementById('countdown-text');
@@ -404,6 +504,112 @@
                     launchActualGame();
                 }
             }, 800);
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function openSubmitModal() {
+            document.getElementById('submit-modal').classList.remove('hidden');
+            document.getElementById('player-name').focus();
+        }
+
+        // MAP: Translates internal Game ID -> Your Real Supabase Table Name
+        const TABLE_MAP = {
+            'reflex': 'copy_paste',
+            'combo': 'bug_fix_combo',
+            'vim': 'vim',
+            'sudo': 'sudo',
+            'binary': 'binary'
+        };
+
+        async function handleGameEnd(gameId, score) {
+            pendingScore = parseFloat(score);
+            pendingGameId = gameId;
+            const realTableName = TABLE_MAP[gameId]; 
+
+            // 1. Force the "Share" button to appear
+            const activePanel = document.getElementById(`game-${gameId}`);
+            
+            // Find the share button by class
+            const shareBtn = activePanel.querySelector('.share-btn'); 
+            
+            if (shareBtn) {
+                shareBtn.classList.remove('hidden');
+                shareBtn.style.display = 'inline-block'; // FORCE VISIBILITY
+                shareBtn.onclick = openSubmitModal;
+            }
+
+            // 2. Check Database for Top Score
+            console.log(`Checking DB table: ${realTableName}`);
+            
+            const { data, error } = await _db
+                .from(realTableName)
+                .select('record')
+                .order('record', { ascending: true })
+                .limit(1);
+
+            if (error) {
+                console.error("Supabase Error:", error);
+                return;
+            }
+
+            // Auto-open if table is empty OR new score is lower (better) than top score
+            if (data.length === 0 || pendingScore < data[0].record) {
+                openSubmitModal(); 
+            }
+        }
+
+        async function submitToSupabase() {
+            const nameInput = document.getElementById('player-name');
+            let name = nameInput.value.trim() || "Anonymous";
+            const realTableName = TABLE_MAP[pendingGameId];
+
+            const { error } = await _db
+                .from(realTableName)
+                .insert({ name: name, record: pendingScore });
+
+            if (!error) {
+                alert("Record Saved!");
+                closeModal('submit-modal');
+                nameInput.value = ""; 
+                viewLeaderboard(pendingGameId); 
+            } else {
+                alert("Error saving: " + error.message);
+            }
+        }
+
+        async function viewLeaderboard(gameId) {
+            if(!gameId) gameId = currentGame || 'reflex';
+            const realTableName = TABLE_MAP[gameId];
+            
+            document.getElementById('leaderboard-modal').classList.remove('hidden');
+            document.getElementById('lb-title').innerText = gameId.toUpperCase() + " RANKINGS";
+            const list = document.getElementById('lb-list');
+            list.innerHTML = "Loading...";
+
+            const { data, error } = await _db
+                .from(realTableName)
+                .select('name, record, timestamp')
+                .order('record', { ascending: true })
+                .limit(20);
+
+            if (error) {
+                list.innerText = "Error loading data.";
+                return;
+            }
+
+            list.innerHTML = "";
+            data.forEach((row, index) => {
+                let scoreDisplay = gameId === 'reflex' ? `${row.record} ms` : `${row.record} s`;
+                list.innerHTML += `
+                    <div class="lb-row">
+                        <span>#${index + 1} ${row.name}</span>
+                        <span>${scoreDisplay}</span>
+                    </div>
+                `;
+            });
         }
 
         function resetGameUI(game) {
@@ -518,12 +724,18 @@
 
         function nextVimTask() {
             if(vimTaskIndex >= vimTasks.length) {
+                // WIN
                 gameActive = false;
                 clearInterval(gameTimerInt);
-                const finalTime = Date.now() - startTime;
+                
+                const finalTime = (Date.now() - startTime) / 1000; 
+                
                 document.getElementById('vim-goal-text').innerText = "DONE.";
-                document.getElementById('vim-rank').innerText = getRankTitle(finalTime, RANKS_VIM);
+                document.getElementById('vim-rank').innerText = getRankTitle(finalTime * 1000, RANKS_VIM);
                 document.getElementById('vim-btn').style.display = 'inline-block';
+                
+                // NEW: Database Call
+                handleGameEnd('vim', finalTime); 
                 return;
             }
             currentVimTask = vimTasks[vimTaskIndex];
@@ -625,7 +837,7 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === "Escape") { showMenu(); return; }
 
-            // REFLEX
+            // --- GAME 1: REFLEX ---
             if (currentGame === 'reflex') {
                 if (e.ctrlKey && e.key.toLowerCase() === 'c') {
                     e.preventDefault();
@@ -643,18 +855,22 @@
                         reflexPhase = 'idle';
                         document.getElementById('reflex-btn').style.display = 'inline-block';
                     } else if (reflexPhase === 'paste') {
-                        const reactionTime = Date.now() - startTime;
+                        // WIN
+                        const reactionTime = Date.now() - startTime; 
                         reflexPhase = 'idle';
                         document.body.style.backgroundColor = "var(--bg-color)";
                         document.getElementById('reflex-status').style.color = "var(--text-color)";
                         document.getElementById('reflex-status').innerText = reactionTime + " ms";
                         document.getElementById('reflex-rank').innerText = getRankTitle(reactionTime, RANKS_REFLEX);
                         document.getElementById('reflex-btn').style.display = 'inline-block';
+                        
+                        // NEW: Database Call
+                        handleGameEnd('reflex', reactionTime);
                     }
                 }
             }
 
-            // COMBO
+            // --- GAME 2: COMBO ---
             if (currentGame === 'combo' && gameActive) {
                 if (e.ctrlKey) {
                     e.preventDefault();
@@ -665,17 +881,21 @@
                         if(comboIndex < comboSequence.length) {
                             document.getElementById(`ckey-${comboIndex}`).classList.add('active');
                         } else {
+                            // WIN
                             gameActive = false;
                             clearInterval(gameTimerInt);
-                            const finalTime = Date.now() - startTime;
-                            document.getElementById('combo-rank').innerText = getRankTitle(finalTime, RANKS_COMBO);
+                            const finalTime = (Date.now() - startTime) / 1000; 
+                            document.getElementById('combo-rank').innerText = getRankTitle(finalTime * 1000, RANKS_COMBO);
                             document.getElementById('combo-btn').style.display = 'inline-block';
+                            
+                            // NEW: Database Call
+                            handleGameEnd('combo', finalTime);
                         }
                     }
                 }
             }
 
-            // VIM
+            // --- GAME 3: VIM (Typing logic only, win logic is in nextVimTask) ---
             if (currentGame === 'vim' && gameActive) {
                 e.preventDefault();
                 if (e.key.length === 1) vimInput += e.key;
@@ -692,7 +912,7 @@
                 document.getElementById('vim-input-display').innerText = vimInput;
             }
 
-            // SUDO
+            // --- GAME 4: SUDO ---
             if (currentGame === 'sudo' && gameActive) {
                 if (e.key.length !== 1) return;
                 const expectedChar = sudoTarget[sudoInput.length];
@@ -701,11 +921,15 @@
                     document.getElementById('sudo-display').innerText = sudoInput + "_";
                     document.getElementById('sudo-display').style.color = "var(--text-color)";
                     if (sudoInput === sudoTarget) {
+                        // WIN
                         gameActive = false;
                         clearInterval(gameTimerInt);
-                        const finalTime = Date.now() - startTime;
-                        document.getElementById('sudo-rank').innerText = getRankTitle(finalTime, RANKS_SUDO);
+                        const finalTime = (Date.now() - startTime) / 1000;
+                        document.getElementById('sudo-rank').innerText = getRankTitle(finalTime * 1000, RANKS_SUDO);
                         document.getElementById('sudo-btn').style.display = 'inline-block';
+                        
+                        // NEW: Database Call
+                        handleGameEnd('sudo', finalTime);
                     }
                 } else {
                     sudoInput = "";
@@ -716,7 +940,7 @@
                 }
             }
 
-            // BINARY
+            // --- GAME 5: BINARY ---
             if (currentGame === 'binary' && gameActive) {
                 if (e.key === "0" || e.key === "1") {
                     if (e.key === binarySeq[binaryIndex]) {
@@ -726,11 +950,15 @@
                         if (binaryIndex < binarySeq.length) {
                             document.getElementById(`bit-${binaryIndex}`).classList.add('current');
                         } else {
+                            // WIN
                             gameActive = false;
                             clearInterval(gameTimerInt);
-                            const finalTime = Date.now() - startTime;
-                            document.getElementById('binary-rank').innerText = getRankTitle(finalTime, RANKS_BINARY);
+                            const finalTime = (Date.now() - startTime) / 1000;
+                            document.getElementById('binary-rank').innerText = getRankTitle(finalTime * 1000, RANKS_BINARY);
                             document.getElementById('binary-btn').style.display = 'inline-block';
+                            
+                            // NEW: Database Call
+                            handleGameEnd('binary', finalTime);
                         }
                     } else {
                         document.getElementById('game-binary').classList.add('shake');
